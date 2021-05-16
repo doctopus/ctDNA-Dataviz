@@ -1,0 +1,16 @@
+# Ignore Mac system files
+.DS_store
+
+# Ignore R Project Files
+.RData
+.Rhistory
+
+# Ignore .Rproj.user folder
+.Rproj.user/
+
+# Ignore all Excel Files
+*.xlsx
+
+# Ignore Images and Zunk folders
+images/
+zunk/
