@@ -302,12 +302,7 @@ ctDNA.Analysis$Metastasis <- factor(ctDNA.Analysis$Metastasis, levels = c(0, 1, 
                                     labels = c("Adjuvant", "Metastatic", "Brain Mets"))
 ctDNA.Analysis$ageGroup <- factor(ctDNA.Analysis$ageGroup)
 
-survCox <- coxph(Surv(duration.followup, death.event) ~ Metastasis + 
-                   Metastasis + 
-                   Sex +
-                   BRAF+
-                   ageGroup+
-                   start.positive,
+survCox <- coxph(Surv(duration.followup, death.event) ~ Sex + BRAF + ageGroup + ANA + start.positive,
                  data = ctDNA.Analysis)
 ggforest(survCox, data = ctDNA.Analysis)
 
