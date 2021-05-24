@@ -325,80 +325,9 @@ graph5 =ctDNA.ID %>%
 
 
 
-#Graph 6 Metastatic categorization Ordered============================
-#Data Manipulation
-
-ctDNA.ID <- merge(x=ctDNA.Biocartis, y=ctDNA.Index[,c("ID",
-                                            "Death", 
-                                            "Metastasis")], 
-                  by='ID', all.x = TRUE) %>%
-  group_by(ID) %>%
-  mutate(start.date=min(Date),
-         days=Date-min(Date),
-         duration=max(Date)-min(Date)) %>%
-  arrange(start.date, Date) %>%
-  mutate(start.1= ifelse(Date==start.date & Result=="1", 1, 0),
-         start.positive=max(start.1),
-         number.positive= sum(as.numeric(as.character(Result)), na.rm = TRUE))
-#Count number of unique patients; will be used as y-axis
-number.patients <- length(unique(ctDNA.ID[["ID"]])) #[ gives a data.frame(list), [[ gives a vector
-
-length.order = ctDNA.ID %>% 
-  group_by(Metastasis, duration, ID) %>% #Adding duration here makes the IDs ordered per it
-  summarise(mets.order=mean(as.numeric(as.character(Metastasis)))) %>% 
-  #summarise(duration.order=mean(as.numeric(duration))) %>% 
-  #ungroup() %>%
-  arrange(desc(mets.order), duration) %>% 
-  #arrange(desc(.data[["start.positive"]]), desc(.data[["mets.order"]]), .data[["duration"]]) %>% 
-  #arrange(desc(start.positive), mets.order, duration.order, .by_group = TRUE) %>% 
-  pull(ID)
-ctDNA.ID$ID = factor(ctDNA.ID$ID, levels=length.order)
-
-graph6 =ctDNA.ID %>%
-  #ggplot(aes(x=days, y=reorder(ID,desc(start.date)), size=Result, color=Result)) +
-  ggplot(aes(x=days, y=ID, size=Result, color=Result)) +
-  geom_line(aes(color=Metastasis), size= 2, alpha=0.75) +
-  geom_point(aes(group = seq_along(Date)), # needed, otherwise transition doesn't work
-             alpha =0.9, stroke= 1,
-             #color = c("forestgreen")) + 
-             #color = pal_jco()(1))+
-             color = pal_jco()(5)[c(1)])+
-  labs(title="ctDNA BRAF Detection Timeline",
-       #subtitle="Detection of BRAF mutation in ctDNA",
-       x= "Days",
-       y= "Patients",
-       color="Metastasis:",
-       size="ctDNA Detection:",
-       caption = paste("ctDNA Data from",  min(ctDNA.ID$Date), "to",max(ctDNA.ID$Date))) +
-  guides(size=guide_legend(reverse = TRUE),
-         color=guide_legend(reverse = FALSE)) +
-  theme_excel_new()+ #theme_fivethirtyeight() +#theme_solarized()+ #theme_economist()+
-  theme(title=element_text(color = "#657b83"),
-        axis.title.x = element_text(angle = 0, hjust = 0.5, vjust = 1),
-        axis.title.y = element_blank(),
-        plot.title.position = "panel",
-        plot.title = element_text(hjust=0.5, vjust = 1),
-        plot.subtitle = element_text(hjust=0.5, vjust = 1),
-        legend.position = "bottom",
-        #legend.position = c(0.3, 0),
-        legend.title =  element_text(inherit.blank = FALSE, size = 10, color = "#000000"),
-        legend.box = "horizontal") +
-  scale_color_manual(values = pal_jama("default")(5)[c(2,4,3)], labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
-  #scale_color_manual(values=c("#425903", "#A5512B", "#632526"),
-  
-  #scale_color_jama(breaks=c(0, 1, 2), labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
-  
-  #scale_color_manual(values=c("#36A6E5", "#D76A38", "#A23E52"),breaks=c(0, 1, 2),
-  #labels=c("Adjuvant", "Metastatic", "Brain Mets")) +
-  scale_size_manual(values = c(0, 3),
-                    breaks = c(0, 1),
-                    labels=c("Negative", "Positive")) +
-  #scale_x_continuous(limits=c(0,490), breaks = seq(0, 490, by=90)) +
-  scale_x_continuous(breaks=seq(0, max(as.numeric(ctDNA.ID$duration)), by=60))+
-  scale_y_discrete(labels = number.patients:1)
 
 
-#Graph 7 Unfaceted categorization Start Negative vs Positive===============================
+#Graph 6 Unfaceted categorization Start Negative vs Positive===============================
 ctDNA.ID <- merge(x=ctDNA.Biocartis, y=ctDNA.Index[,c("ID",
                                             "Sex",
                                             "Death", 
@@ -429,7 +358,7 @@ y.order = ctDNA.ID %>%
   pull(ID)
 ctDNA.ID$ID = factor(ctDNA.ID$ID, levels=y.order)
 
-graph7 =ctDNA.ID %>%
+graph6 =ctDNA.ID %>%
   arrange(start.positive, Metastasis) %>%
   #ggplot(aes(x=days, y=reorder(ID,desc(start.date)), size=Result, color=Result)) +
   #ggplot(aes(x=days, y=reorder(ID, -as.numeric(Metastasis), mean), size=Result, color=Result)) +
@@ -475,3 +404,76 @@ graph7 =ctDNA.ID %>%
   scale_y_discrete(labels = number.patients:1) #+
 #facet_grid(start.positive ~ ., scales = "free")#+
 #facet_grid(Metastasis ~ ., scales="free")
+
+
+#Graph 7 Metastatic categorization Ordered============================
+#Data Manipulation
+
+ctDNA.ID <- merge(x=ctDNA.Biocartis, y=ctDNA.Index[,c("ID",
+                                                      "Death", 
+                                                      "Metastasis")], 
+                  by='ID', all.x = TRUE) %>%
+  group_by(ID) %>%
+  mutate(start.date=min(Date),
+         days=Date-min(Date),
+         duration=max(Date)-min(Date)) %>%
+  arrange(start.date, Date) %>%
+  mutate(start.1= ifelse(Date==start.date & Result=="1", 1, 0),
+         start.positive=max(start.1),
+         number.positive= sum(as.numeric(as.character(Result)), na.rm = TRUE))
+#Count number of unique patients; will be used as y-axis
+number.patients <- length(unique(ctDNA.ID[["ID"]])) #[ gives a data.frame(list), [[ gives a vector
+
+length.order = ctDNA.ID %>% 
+  group_by(Metastasis, duration, ID) %>% #Adding duration here makes the IDs ordered per it
+  summarise(mets.order=mean(as.numeric(as.character(Metastasis)))) %>% 
+  #summarise(duration.order=mean(as.numeric(duration))) %>% 
+  #ungroup() %>%
+  arrange(desc(mets.order), duration) %>% 
+  #arrange(desc(.data[["start.positive"]]), desc(.data[["mets.order"]]), .data[["duration"]]) %>% 
+  #arrange(desc(start.positive), mets.order, duration.order, .by_group = TRUE) %>% 
+  pull(ID)
+ctDNA.ID$ID = factor(ctDNA.ID$ID, levels=length.order)
+
+graph7 =ctDNA.ID %>%
+  #ggplot(aes(x=days, y=reorder(ID,desc(start.date)), size=Result, color=Result)) +
+  ggplot(aes(x=days, y=ID, size=Result, color=Result)) +
+  geom_line(aes(color=Metastasis), size= 2, alpha=0.75) +
+  geom_point(aes(group = seq_along(Date)), # needed, otherwise transition doesn't work
+             alpha =0.9, stroke= 1,
+             #color = c("forestgreen")) + 
+             #color = pal_jco()(1))+
+             color = pal_jco()(5)[c(1)])+
+  labs(title="ctDNA BRAF Detection Timeline",
+       #subtitle="Detection of BRAF mutation in ctDNA",
+       x= "Days",
+       y= "Patients",
+       color="Metastasis:",
+       size="ctDNA Detection:",
+       caption = paste("ctDNA Data from",  min(ctDNA.ID$Date), "to",max(ctDNA.ID$Date))) +
+  guides(size=guide_legend(reverse = TRUE),
+         color=guide_legend(reverse = FALSE)) +
+  theme_excel_new()+ #theme_fivethirtyeight() +#theme_solarized()+ #theme_economist()+
+  theme(title=element_text(color = "#657b83"),
+        axis.title.x = element_text(angle = 0, hjust = 0.5, vjust = 1),
+        axis.title.y = element_blank(),
+        plot.title.position = "panel",
+        plot.title = element_text(hjust=0.5, vjust = 1),
+        plot.subtitle = element_text(hjust=0.5, vjust = 1),
+        legend.position = "bottom",
+        #legend.position = c(0.3, 0),
+        legend.title =  element_text(inherit.blank = FALSE, size = 10, color = "#000000"),
+        legend.box = "horizontal") +
+  scale_color_manual(values = pal_jama("default")(5)[c(2,4,3)], labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
+  #scale_color_manual(values=c("#425903", "#A5512B", "#632526"),
+  
+  #scale_color_jama(breaks=c(0, 1, 2), labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
+  
+  #scale_color_manual(values=c("#36A6E5", "#D76A38", "#A23E52"),breaks=c(0, 1, 2),
+  #labels=c("Adjuvant", "Metastatic", "Brain Mets")) +
+  scale_size_manual(values = c(0, 3),
+                    breaks = c(0, 1),
+                    labels=c("Negative", "Positive")) +
+  #scale_x_continuous(limits=c(0,490), breaks = seq(0, 490, by=90)) +
+  scale_x_continuous(breaks=seq(0, max(as.numeric(ctDNA.ID$duration)), by=60))+
+  scale_y_discrete(labels = number.patients:1)

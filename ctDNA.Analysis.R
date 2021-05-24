@@ -85,7 +85,7 @@ ggsurvplot(.Survfit.All, palette = "#2E9FDF",
 
 
 
-#Kaplan Meier Treatment Settings----=================
+#Kaplan Meier Treatment Settings (Manuscript)----=================
 #Duration Follow Up: Considering Alive people to be followed up till current date
 .Survfit.Metastasis <- survfit(formula = Surv(duration.followup, death.event) ~ Metastasis,
                                    conf.type ="log", conf.int = 0.95,
@@ -152,7 +152,7 @@ ggsurvplot(.Survfit.Start.Positive,
            
 
 
-#Kaplan Meier Brain Mets Baseline Positive vs Baseline Negative vs Others----================
+#Kaplan Meier Brain Mets Baseline Positive vs Baseline Negative vs Others (manuscript)----================
 .Survfit.Mets.Brain.Start1 <- survfit(Surv(duration.followup, death.event) ~ mets.brain.start1, 
                                       conf.type ="log", conf.int = 0.95, 
                                       type = "kaplan-meier", error = "greenwood", data=ctDNA.Analysis)
@@ -160,13 +160,13 @@ ggsurvplot(.Survfit.Start.Positive,
 ggsurvplot(.Survfit.Mets.Brain.Start1,
            risk.table = TRUE,
            pval = TRUE, pval.method = TRUE,
-           surv.median.line = "hv",
+           #surv.median.line = "hv",
            conf.int = FALSE,
            cumevents = FALSE,
            cumcensor = FALSE,
            break.time.by = 60,
            palette = "jco", #lancet, jama, aaas, nejm, npg, jco, cosmic, igv, locuszoom, d3
-           legend =c(0.8,0.6),
+           legend =c(0.8,0.65),
            legend.labs = c("No Brain Metastasis", "Brain Mets: Baseline Negative", "Brain Mets: Baseline Positive"),
            xlab = "Time (Days)",
            ylab = "Survival Probability",
@@ -260,7 +260,7 @@ ggsurvplot(.Survfit.Ratio.Positive,
            font.family="Roboto Condensed")
 
 
-#Kaplan Meier Detection Rate----=================
+#Kaplan Meier: Rate of Detection (manuscript)----=================
 rate <- as_tibble(ctDNA.Analysis)
 rate.non0 <- filter(rate, ctDNA.detection.rate > 0)%>%
   mutate(rate.group=cut(ctDNA.detection.rate, breaks=c(0, 0.3, Inf), 
@@ -284,7 +284,7 @@ ggsurvplot(.Survfit.Rate.Positive,
            cumcensor = FALSE,
            break.time.by = 60,
            palette = "locuszoom", #lancet, jama, aaas, nejm, npg, jco, cosmic, igv, locuszoom, d3
-           legend =c(0.8, 0.8),
+           legend =c(0.85, 0.8),
            legend.labs = c("Detection Rate ≤ 0.3", "Detection Rate > 0.3"),
            xlab = "Time (Days)",
            ylab = "Survival Probability",
@@ -292,7 +292,7 @@ ggsurvplot(.Survfit.Rate.Positive,
            ggtheme = theme_classic(base_size=12, base_family = "Roboto Condensed"),
            font.family="Roboto Condensed")
 
-#Cox Hazard Ratio Positive----=================
+#Cox Hazard Ratio Positive (manuscript)----=================
 ctDNA.Analysis <- ctDNA.Analysis %>%
   mutate_at(c("Metastasis", "start.positive"), as.factor) %>%
   mutate(ageGroup = ifelse(age >=50, "old","young"))
