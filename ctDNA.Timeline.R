@@ -14,6 +14,26 @@ ctDNA.Biocartis <-  read_excel("ctDNA.xlsx", sheet="Biocartis")%>%
   mutate_at(c("Patient", "ID", "Result"), as.factor) %>% 
   mutate_at(c("Date"), as.Date)
 
+#Graph 0 Number of tests over time----
+Graph0 = ggplot(ctDNA.Biocartis, aes(format(Date, "%Y-%m"))) +
+  geom_bar(stat = "count",
+           fill = pal_aaas()(5)[c(1)]) +
+  labs(title="ctDNA BRAF Cartridge Usage in Each Month",
+       #subtitle="Detection of BRAF mutation in ctDNA",
+       x= "Month",
+       y= "Number of ctDNA BRAF Tests",
+       caption = paste("Total ", nrow(ctDNA.Biocartis), "ctDNA BRAF tests done from",  min(ctDNA.Biocartis$Date), "to",max(ctDNA.Biocartis$Date)))+
+  theme_excel_new()+ #theme_fivethirtyeight() +#theme_solarized()+ #theme_economist()+
+  theme(title=element_text(color = "#657b83"),
+        axis.text.y=element_text(size=15),
+        axis.title.x = element_text(angle = 0, hjust = 0.5, vjust = 1),
+        axis.title.y = element_text(size=15, hjust = 0.5, vjust = 1),
+        #axis.title.y = element_blank(),
+        plot.title.position = "panel",
+        plot.title = element_text(hjust=0.5, vjust = 1),
+        plot.subtitle = element_text(hjust=0.5, vjust = 1),
+        legend.title =  element_text(inherit.blank = FALSE, size = 10, color = "#000000"))
+
 
 
 #Graph 1 Actual Dates in Timeline----
@@ -502,7 +522,7 @@ ctDNA.Timeline <- merge(x=ctDNA.Biocartis,
   arrange(start.date, Date) #To order the table from older to newer recruitment
 
 #Count number of unique patients; will be used as y-axis
-number.patients <- length(unique(ctDNA.ID[["ID"]])) #[ gives a data.frame(list), [[ gives a vector
+number.patients <- length(unique(ctDNA.Timeline[["ID"]])) #[ gives a data.frame(list), [[ gives a vector
 
 #Custom Order the IDs
 length.order = ctDNA.Timeline %>% 
@@ -530,14 +550,14 @@ graph8 =ctDNA.Timeline %>% ggplot()+
              #color = pal_jco()(1))+
              color = pal_jco()(5)[c(1)])+
   #geom_linerange(aes(xmin=duration, xmax=followup, y=ID, color=Metastasis), size= 0.3, alpha =0.8) +
-  geom_point(aes(x=death.duration, y=ID), shape = 15, color = "#234168", fill= "#234168") +
+  geom_point(aes(x=death.duration, y=ID), shape = 15, color = "red", fill= "#234168") +
   labs(title="ctDNA BRAF Detection Timeline",
        #subtitle="Detection of BRAF mutation in ctDNA",
        x= "Days",
        y= "Patients",
        color="Metastasis:",
        size="ctDNA Detection:",
-       caption = paste("ctDNA Data from",  min(ctDNA.ID$Date), "to",max(ctDNA.ID$Date))) +
+       caption = paste("ctDNA Data from",  min(ctDNA.Timeline$Date), "to",max(ctDNA.Timeline$Date))) +
   guides(size=guide_legend(reverse = TRUE),
          color=guide_legend(reverse = FALSE)) +
   theme_excel_new()+ #theme_fivethirtyeight() +#theme_solarized()+ #theme_economist()+
@@ -551,17 +571,24 @@ graph8 =ctDNA.Timeline %>% ggplot()+
         #legend.position = c(0.3, 0),
         legend.title =  element_text(inherit.blank = FALSE, size = 10, color = "#000000"),
         legend.box = "horizontal",
+        #panel.background = element_rect(fill = '#0E2439', color = 'purple'), #plot area color
+        #plot.background = element_rect(fill = "#0E2439"), # Background color of the plot Darktheme
         panel.grid.major.x = element_blank(),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.y=element_blank()) +
-  scale_color_manual(values = pal_jama("default")(5)[c(2,4,3)], labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
-  #scale_color_manual(values=c("#425903", "#A5512B", "#632526"), labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
+  #scale_color_manual(values = pal_jama("default")(5)[c(2,4,3)], labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
+  scale_color_manual(values=c("#9ac026", "#E2A26E", "#35C0F0"), labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
   #scale_color_jama(breaks=c(0, 1, 2), labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
   #scale_color_manual(values=c("#36A6E5", "#D76A38", "#A23E52"),breaks=c(0, 1, 2),labels=c("Adjuvant", "Metastatic", "Brain Mets")) +
+  #scale_color_jama()+
   scale_size_manual(values = c(0, 3),
                     breaks = c(0, 1),
                     labels=c("Negative", "Positive")) +
   #scale_x_continuous(limits=c(0,490), breaks = seq(0, 490, by=90)) +
-  scale_x_continuous(breaks=seq(0, max(as.numeric(ctDNA.Timeline$duration)), by=60))+
-  scale_y_discrete(labels = number.patients:1)
-
+  scale_x_continuous(breaks=seq(0, max(as.numeric(ctDNA.Timeline$duration)), by=60)) #+
+  #scale_y_discrete(labels = number.patients:1)
+#E7AD7B Brown
+#9ac026 lemon green
+#73D393 Torques green
+#0E2439 Indiehacker color
+#scales::show_col(pal_nejm("default")(10))

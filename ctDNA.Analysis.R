@@ -63,9 +63,34 @@ ctDNA.Analysis <-  unique(ctDNA.Analysis) %>%
 
 #View Median Survival Information
 #print(survfit(Surv(duration.study, death.event) ~ start.positive, data=ctDNA.Analysis))
+# print(survfit(Surv(duration.study, death.event) ~ Metastasis, data=ctDNA.Analysis))
 
 #Log Rank Test
 #survdiff(Surv(duration.study, death.event) ~ start.positive, data=ctDNA.Analysis)
+# summary(ctDNA.Analysis$duration.followup)
+# summary(subset(ctDNA.Analysis, Metastasis == 1 & age >= 18, select=duration.followup))
+# summarise(subset(ctDNA.Analysis, Metastasis == 1, select=age))
+# 
+# print(survfit( Surv(duration.followup, death.event)~Metastasis, data=ctDNA.Analysis))
+# 
+# df_stat <- ctDNA.Analysis %>% group_by(Metastasis) %>% summarize(
+#   count = n(),
+#   mean = mean(age, na.rm = TRUE), 
+#   sd = sd(age, na.rm = TRUE))
+# 
+# # T Test
+# 
+# tTest.data <- subset(ctDNA.Analysis, as.numeric(Metastasis) > 0 & number.total > 1, select=c(Metastasis, ratio.positive)) 
+# boxplot(ratio.positive~Metastasis, data = tTest.data)
+#   t.test(ratio.positive~Metastasis, data = tTest.data, mu=0, alt="two.sided", conf=0.95, var.eq=F, paired=F)
+#   t.test(ratio.positive[Metastasis=="1"], ratio.positive[Metastasis=="2"])
+  
+  
+#Median survival time calculation
+survfit(Surv(duration.followup, death.event) ~ 1, data = ctDNA.Analysis)
+#Compare survival time between groups
+survdiff(Surv(duration.followup, death.event) ~ Metastasis, data = subset(ctDNA.Analysis, Metastasis >= 1 & age >= 18)) 
+
 
 #The chi-square statistic and p-value generated above are for the log rank test of the null
 #...hypothesis of no difference between the two survival curve.
@@ -111,7 +136,7 @@ ggsurvplot(.Survfit.Metastasis,
            cumcensor = FALSE,
            break.time.by = 60,
            palette = "cosmic", #lancet, jama, aaas, nejm, npg, jco, cosmic, igv, locuszoom, d3
-           legend =c(0.9, 0.6),
+           legend =c(0.9, 0.4),
            legend.labs = c("Adjuvant", "Mets to other organs", "Mets to the brain"),
            xlab = "Time (Days)",
            ylab = "Survival Probability",
@@ -219,7 +244,7 @@ ggsurvplot(.Survfit.Mets.Brain.StartEnd1,
            cumcensor = FALSE,
            break.time.by = 60,
            palette = "jama", #lancet, jama, aaas, nejm, npg, jco, cosmic, igv, locuszoom, d3
-           legend =c(0.8, 0.6),
+           legend =c(0.8, 0.7),
            legend.labs = c("Not Both Baseline and Last Detectable", "Both Baseline and Last Detectable"),
            xlab = "Time (Days)",
            ylab = "Survival Probability",
@@ -288,6 +313,7 @@ ggsurvplot(.Survfit.Rate.Positive,
            legend.labs = c("Detection Rate ≤ 0.3", "Detection Rate > 0.3"),
            xlab = "Time (Days)",
            ylab = "Survival Probability",
+           #xlim = c(0, 500), #added to increase x limit
            title = "Patients with detectable ctDNA: high vs low rate of detection",
            ggtheme = theme_classic(base_size=12, base_family = "Roboto Condensed"),
            font.family="Roboto Condensed")
@@ -317,7 +343,8 @@ number.patients <- length(unique(rate.non0[["ID"]])) #[ gives a data.frame(list)
 graph10 = rate.non0 %>%
   ggplot(aes(x=reorder(ID,-as.numeric(ctDNA.detection.rate)), y=ctDNA.detection.rate)) +
   geom_point(size= 2, color="#FF2550", alpha=0.75)+
-  theme_few() +
+  #theme_few()+
+  theme_minimal() +
   labs(title="ctDNA Detection Rate",
        subtitle="Detection Rate = (# of Positive Tests/Total # of Tests)/Duration of Followup *100",
        x= "Patients",
