@@ -8,7 +8,7 @@ library(ggsci)
 
 ctDNA.Index <- read_excel("ctDNA.xlsx", sheet="Index") %>% 
   mutate_at(c("ID", "Sex", "BRAF", "Metastasis", "Stage", "ANA"), as.factor) %>% 
-  mutate_at(c("DoB", "Death", "Stage4", "StageBrain"), as.Date)
+  mutate_at(c("DoB", "Death", "LastFollowed", "Stage4", "StageBrain"), as.Date)
 
 ctDNA.Biocartis <-  read_excel("ctDNA.xlsx", sheet="Biocartis")%>% 
   mutate_at(c("Patient", "ID", "Result"), as.factor) %>% 
@@ -505,6 +505,7 @@ graph7 =ctDNA.ID %>%
 ctDNA.Timeline <- merge(x=ctDNA.Biocartis, 
                         y=ctDNA.Index[, c("ID",
                                           "Death", 
+                                          "LastFollowed",
                                           "Metastasis",
                                           "Stage4",
                                           "StageBrain")], 
@@ -514,7 +515,8 @@ ctDNA.Timeline <- merge(x=ctDNA.Biocartis,
          days=Date-min(Date),
          duration=max(Date)-min(Date),
          death.duration=Death-start.date,
-         followup=ifelse(!is.na(Death), Death-start.date, Sys.Date()-start.date),
+         #followup=ifelse(!is.na(Death), Death-start.date, Sys.Date()-start.date),
+         followup=ifelse(!is.na(Death), Death-start.date, LastFollowed-start.date),
          start.1= ifelse(Date==start.date & Result=="1", 1, 0),
          start.positive=max(start.1),
          number.positive= sum(as.numeric(as.character(Result)), na.rm = TRUE)) %>% 
@@ -592,3 +594,96 @@ graph8 =ctDNA.Timeline %>% ggplot()+
 #73D393 Torques green
 #0E2439 Indiehacker color
 #scales::show_col(pal_nejm("default")(10))
+
+#Graph9 : Only Stage IV: For SMR Poster 20211020----
+library(lubridate)
+ctDNA.Timeline <- merge(x=ctDNA.Biocartis, 
+                        y=ctDNA.Index[, c("ID",
+                                          "DoB",
+                                          "Sex",
+                                          "BRAF",
+                                          "Death", 
+                                          "Metastasis",
+                                          "Stage4",
+                                          "StageBrain")], 
+                        by='ID', all.x = TRUE) %>%
+  group_by(ID) %>%
+  mutate(age= ifelse(!is.na(Death), year(Death) - year(DoB), as.integer(format(Sys.Date(), "%Y")) - year(DoB)), #Year(x) is a lubridate function
+         start.date=min(Date),
+         days=Date-min(Date),
+         duration=max(Date)-min(Date),
+         death.duration=Death-start.date,
+         followup=ifelse(!is.na(Death), Death-start.date, Sys.Date()-start.date),
+         start.1= ifelse(Date==start.date & Result=="1", 1, 0),
+         start.positive=max(start.1),
+         number.positive= sum(as.numeric(as.character(Result)), na.rm = TRUE)) %>% 
+  mutate_at(c("days", "duration", "death.duration", "followup"), as.numeric) %>% 
+  arrange(start.date, Date) #To order the table from older to newer recruitment
+
+ctDNA.IV<-  filter(ctDNA.Timeline, Metastasis =="1" | Metastasis =="2")
+#Count number of unique patients; will be used as y-axis
+number.patients <- length(unique(ctDNA.IV[["ID"]])) #[ gives a data.frame(list), [[ gives a vector
+
+#Custom Order the IDs
+length.order = ctDNA.IV %>% 
+  group_by(Metastasis, duration, followup, ID) %>% #Adding duration here makes the IDs ordered per it
+  #group_by(Metastasis, duration, ID) %>% #Adding duration here makes the IDs ordered per it
+  summarise(mets.order=mean(as.numeric(as.character(Metastasis)))) %>% 
+  #summarise(duration.order=mean(as.numeric(duration))) %>% 
+  #ungroup() %>%
+  arrange(desc(mets.order), duration, followup) %>% 
+  #arrange(desc(.data[["start.positive"]]), desc(.data[["mets.order"]]), .data[["duration"]]) %>% 
+  #arrange(desc(start.positive), mets.order, duration.order, .by_group = TRUE) %>% 
+  pull(ID)
+ctDNA.IV$ID = factor(ctDNA.IV$ID, levels=length.order)
+
+#Graph
+graph9 =ctDNA.IV %>% ggplot()+
+  #ggplot(aes(x=days, y=reorder(ID,desc(start.date)), size=Result, color=Result)) +
+  #ggplot(aes(x=days, y=ID, size=Result, color=Result)) +
+  geom_line(aes(x=days, y=ID, color=Metastasis), size= 2, alpha=0.75) +
+  geom_linerange(aes(xmin=duration, xmax=followup, y=ID, color=Metastasis), size= 0.3, alpha =0.8) +
+  geom_point(aes(x=days, y=ID, size=Result, group = seq_along(Date)), # needed, otherwise transition doesn't work
+             alpha =0.9, stroke= 1,
+             #color = c("forestgreen")) + 
+             #color = pal_jco()(1))+
+             color = pal_jco()(5)[c(1)])+
+  #geom_linerange(aes(xmin=duration, xmax=followup, y=ID, color=Metastasis), size= 0.3, alpha =0.8) +
+  geom_point(aes(x=death.duration, y=ID), shape = 15, color = "red", fill= "#234168") +
+  labs(title="ctDNA BRAF Detection Timeline",
+       #subtitle="Detection of BRAF mutation in ctDNA",
+       x= "Days",
+       y= "Patients",
+       color="Metastasis:",
+       size="ctDNA Detection:")+ #,
+       #caption = paste("ctDNA Data from",  min(ctDNA.IV$Date), "to",max(ctDNA.IV$Date))) +
+  guides(size=guide_legend(reverse = TRUE),
+         color=guide_legend(reverse = FALSE)) +
+  theme_excel_new()+ #theme_fivethirtyeight() +#theme_solarized()+ #theme_economist()+
+  theme(title=element_text(color = "#657b83"),
+        axis.title.x = element_text(angle = 0, hjust = 0.5, vjust = 1),
+        axis.title.y = element_blank(),
+        plot.title.position = "panel",
+        plot.title = element_text(size = 20, color = "#005BBB", hjust=0.5, vjust = 1),
+        plot.subtitle = element_text(hjust=0.5, vjust = 1),
+        legend.position = "bottom",
+        #legend.position = c(0.3, 0),
+        legend.title =  element_text(inherit.blank = FALSE, size = 10, color = "#000000"),
+        legend.box = "horizontal",
+        #legend.background = element_rect(fill = "#F1F5FB"),
+        #panel.background = element_rect(fill = '#0E2439', color = 'purple'), #plot area color
+        #plot.background = element_rect(fill = "#F1F5FB"), # Background color of the plot Darktheme
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y=element_blank()) +
+  #scale_color_manual(values = pal_jama("default")(5)[c(2,4,3)], labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
+  scale_color_manual(values=c("#51CF66", "#F08C00"), labels=c("Non-CNS Metastasis", "CNS Metastasis"))+
+  #scale_color_jama(breaks=c(0, 1, 2), labels=c("Adjuvant", "Metastatic", "Brain Mets"))+
+  #scale_color_manual(values=c("#36A6E5", "#D76A38", "#A23E52"),breaks=c(0, 1, 2),labels=c("Adjuvant", "Metastatic", "Brain Mets")) +
+  #scale_color_jama()+
+  scale_size_manual(values = c(0, 3),
+                    breaks = c(0, 1),
+                    labels=c("Negative", "Positive")) +
+  #scale_x_continuous(limits=c(0,490), breaks = seq(0, 490, by=90)) +
+  scale_x_continuous(breaks=seq(0, max(as.numeric(ctDNA.IV$duration)), by=60)) +
+  scale_y_discrete(labels = number.patients:1)

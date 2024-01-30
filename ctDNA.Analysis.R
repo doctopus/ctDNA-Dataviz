@@ -144,6 +144,45 @@ ggsurvplot(.Survfit.Metastasis,
            ggtheme = theme_classic(base_size=12, base_family = "Roboto Condensed"),
            font.family="Roboto Condensed")
 
+#Kaplan Meier Stage IV Settings (SMR Poster 20211020)----=================
+#Duration Follow Up: Considering Alive people to be followed up till current date
+ctDNA.Analysis.IV <- filter(ctDNA.Analysis, Metastasis >= 1)
+.Survfit.Metastasis.IV <- survfit(formula = Surv(duration.followup, death.event) ~ Metastasis,
+                               conf.type ="log", conf.int = 0.95,
+                               type = "kaplan-meier", error = "greenwood",
+                               data=ctDNA.Analysis.IV)
+
+#Duration Study: Considering the duration from first test to last test
+# .Survfit.Metastasis <- survfit(formula = Surv(duration.study, death.event) ~ Metastasis,
+#                                conf.type ="log", conf.int = 0.95,
+#                                type = "kaplan-meier", error = "greenwood", 
+#                                data=ctDNA.Analysis)
+#.Survfit.Metastasis
+ggsurvplot(.Survfit.Metastasis.IV,
+           risk.table = TRUE, risk.table.pos = "out", risk.table.col = "black", risk.table.y.text.col = TRUE,
+           #censor.size=0.1, 
+           size = 1.2,
+           #tables.theme = theme_cleantable(),
+           #ncensor.plot= TRUE, ncensor.plot.height= 0.1,
+           font.tickslab = c(12),
+           legend.title = "Groups",
+           pval = TRUE, pval.method = TRUE,
+           #surv.median.line = "hv",
+           conf.int = FALSE,
+           cumevents = FALSE,
+           cumcensor = FALSE,
+           break.time.by = 60,
+           #palette = "cosmic", #lancet, jama, aaas, nejm, npg, jco, cosmic, igv, locuszoom, d3
+           palette = c("#51CF66", "#F08C00"),
+           legend =c(0.88, 0.32),
+           #legend.title = element_text(size = 20, color = "#005BBB", hjust=0.5, vjust = 1),
+           legend.labs = c("Mets to other organs", "Mets to the brain"),
+           #ggplot.title = element_text(size = 20, color = "#005BBB", hjust=0.5, vjust = 1),
+           xlab = "Time (Days)",
+           ylab = "Survival Probability",
+           title = "Stage IV Melanoma; metastasis to other organs vs metastasis to the CNS",
+           ggtheme = theme_classic(base_size=12, base_family = "Roboto Condensed"),
+           font.family="Roboto Condensed")
 
 #Kaplan Meier All Baseline Positive vs Baseline Negative----=================
 .Survfit.Start.Positive <- survfit(formula = Surv(duration.followup, death.event) ~ start.positive,
@@ -332,7 +371,7 @@ survCox <- coxph(Surv(duration.followup, death.event) ~ Sex + BRAF + ageGroup + 
                  data = ctDNA.Analysis)
 ggforest(survCox, data = ctDNA.Analysis)
 
-# Plotting Rate of Positivity---- 
+#Plotting Rate of Positivity---- 
 
 rate <- as_tibble(ctDNA.Analysis)
 rate.non0 <- filter(rate, ctDNA.detection.rate > 0)%>%
